@@ -42,10 +42,10 @@
 
     <div class="max-w-6xl mx-auto">
         <h1 class="text-3xl font-bold text-gray-900 text-center mb-8">
-            Time Spent: Manual Marketing vs. AI-Assisted Marketing
+            Weekly Hours Spent: Manual vs. AI-Assisted Marketing
         </h1>
         <p class="text-center text-gray-600 mb-10 max-w-3xl mx-auto">
-            This visualization compares the estimated weekly hours a marketing team spends on common tasks. See how AI tools can dramatically reduce time spent on manual labor, freeing up teams for strategic work.
+            This visualization compares the estimated **weekly hours** a marketing team spends on common tasks. See how AI tools can dramatically reduce time spent on manual labor, freeing up teams for strategic work.
         </p>
 
         <!-- Grid container for the two charts -->
@@ -54,7 +54,7 @@
             <!-- Manual Marketing Chart Card -->
             <div class="bg-white p-6 rounded-lg shadow-lg">
                 <h2 class="text-xl font-semibold text-gray-800 mb-4 text-center">
-                    Manual Marketing Efforts
+                    Manual Marketing Efforts (Weekly Hours)
                 </h2>
                 <!-- SVG container for the manual chart -->
                 <div id="manual-chart-container">
@@ -69,7 +69,7 @@
             <!-- AI-Assisted Marketing Chart Card -->
             <div class="bg-white p-6 rounded-lg shadow-lg">
                 <h2 class="text-xl font-semibold text-gray-800 mb-4 text-center">
-                    AI-Assisted Marketing
+                    AI-Assisted Marketing (Weekly Hours)
                 </h2>
                 <!-- SVG container for the AI chart -->
                 <div id="ai-chart-container">
@@ -133,10 +133,9 @@
          * @param {string} containerId - The ID of the div containing the SVG.
          * @param {string} svgId - The ID of the SVG element.
          * @param {Array} data - The data array for the chart.
-         * @param {string} title - The title for the chart.
          * @param {string} barColor - The hex color for the bars.
          */
-        function createBarChart(containerId, svgId, data, title, barColor) {
+        function createBarChart(containerId, svgId, data, barColor) {
             
             // Get the container and its width
             const container = d3.select("#" + containerId);
@@ -234,7 +233,7 @@
                 .attr("y", d => y(d.hours) - 5)
                 .attr("text-anchor", "middle")
                 .style("opacity", 0) // Start invisible for transition
-                .text(d => d.hours.toFixed(1)) // Show one decimal place
+                .text(d => d.hours.toFixed(0)) // Show hours as whole number
                 // Add transition
                 .transition()
                 .duration(750)
@@ -248,7 +247,6 @@
                 "manual-chart-container", 
                 "manual-chart", 
                 manualData, 
-                "Manual Marketing Efforts", 
                 "#EF4444" // Tailwind red-500
             );
             
@@ -256,7 +254,6 @@
                 "ai-chart-container", 
                 "ai-chart", 
                 aiData, 
-                "AI-Assisted Marketing", 
                 "#3B82F6" // Tailwind blue-500
             );
         }
