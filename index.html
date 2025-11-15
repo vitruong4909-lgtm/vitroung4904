@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI vs. Manual Marketing Time</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        /* Custom font */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Style for D3.js text */
+        .axis-label {
+            font-size: 12px;
+            fill: #4B5563; /* gray-600 */
+        }
+        .bar-label {
+            font-size: 12px;
+            font-weight: 500;
+            fill: #1F2937; /* gray-800 */
+        }
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            fill: #111827; /* gray-900 */
+            text-anchor: middle;
+        }
+        .axis path,
+        .axis line {
+            stroke: #D1D5DB; /* gray-300 */
+        }
+        .axis text {
+            fill: #4B5563; /* gray-600 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-900 text-center mb-8">
+            Time Spent: Manual Marketing vs. AI-Assisted Marketing
+        </h1>
+        <p class="text-center text-gray-600 mb-10 max-w-3xl mx-auto">
+            This visualization compares the estimated weekly hours a marketing team spends on common tasks. See how AI tools can dramatically reduce time spent on manual labor, freeing up teams for strategic work.
+        </p>
+
+        <!-- Grid container for the two charts -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            <!-- Manual Marketing Chart Card -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 text-center">
+                    Manual Marketing Efforts
+                </h2>
+                <!-- SVG container for the manual chart -->
+                <div id="manual-chart-container">
+                    <svg id="manual-chart"></svg>
+                </div>
+                <p class="text-center text-gray-700 mt-4">
+                    Total Weekly Time: 
+                    <span id="manual-total" class="font-bold text-2xl text-red-600"></span>
+                </p>
+            </div>
+
+            <!-- AI-Assisted Marketing Chart Card -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 text-center">
+                    AI-Assisted Marketing
+                </h2>
+                <!-- SVG container for the AI chart -->
+                <div id="ai-chart-container">
+                    <svg id="ai-chart"></svg>
+                </div>
+                 <p class="text-center text-gray-700 mt-4">
+                    Total Weekly Time: 
+                    <span id="ai-total" class="font-bold text-2xl text-blue-600"></span>
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-10 p-6 bg-white rounded-lg shadow-lg">
+            <h3 class="text-xl font-semibold text-gray-800 mb-3">Key Takeaways</h3>
+            <div id="summary" class="text-gray-700 space-y-2">
+                <!-- Summary will be populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data based on industry reports and surveys
+        const manualData = [
+            { task: "Content Creation", hours: 20 },
+            { task: "Email Marketing", hours: 15 },
+            { task: "Social Media Mgt.", hours: 12 },
+            { task: "Data Analysis", hours: 8 },
+            { task: "Paid Ad Mgt.", hours: 10 }
+        ];
+
+        const aiData = [
+            { task: "Content Creation", hours: 10 },
+            { task: "Email Marketing", hours: 3 },
+            { task: "Social Media Mgt.", hours: 5 },
+            { task: "Data Analysis", hours: 3 },
+            { task: "Paid Ad Mgt.", hours: 4 }
+        ];
+
+        // Calculate totals
+        const manualTotal = manualData.reduce((acc, d) => acc + d.hours, 0);
+        const aiTotal = aiData.reduce((acc, d) => acc + d.hours, 0);
+        const timeSaved = manualTotal - aiTotal;
+        const percentSaved = ((timeSaved / manualTotal) * 100).toFixed(0);
+
+        // Update total displays
+        document.getElementById('manual-total').textContent = `${manualTotal} Hours`;
+        document.getElementById('ai-total').textContent = `${aiTotal} Hours`;
+        
+        // Update summary text
+        document.getElementById('summary').innerHTML = `
+            <p>By leveraging AI, the total weekly time commitment is reduced from <strong class="text-red-600">${manualTotal} hours</strong> to <strong class="text-blue-600">${aiTotal} hours</strong>.</p>
+            <p class="text-2xl font-bold text-green-600">This represents a total time saving of ${timeSaved} hours per week (${percentSaved}% reduction).</p>
+            <p class="mt-4 text-sm text-gray-600">This reclaimed time allows marketers to focus on high-impact activities like strategy, creativity, and customer relationship building instead of repetitive manual tasks.</p>
+        `;
+
+        // Find the overall max hours for a consistent Y-axis
+        const yMax = d3.max(manualData, d => d.hours);
+
+        /**
+         * Creates a responsive bar chart.
+         * @param {string} containerId - The ID of the div containing the SVG.
+         * @param {string} svgId - The ID of the SVG element.
+         * @param {Array} data - The data array for the chart.
+         * @param {string} title - The title for the chart.
+         * @param {string} barColor - The hex color for the bars.
+         */
+        function createBarChart(containerId, svgId, data, title, barColor) {
+            
+            // Get the container and its width
+            const container = d3.select("#" + containerId);
+            if (container.node() === null) {
+                console.error("Container not found:", containerId);
+                return;
+            }
+            
+            // Clear any existing SVG content
+            d3.select("#" + svgId).html("");
+
+            const containerWidth = container.node().getBoundingClientRect().width;
+
+            // Set up margins
+            const margin = { top: 50, right: 20, bottom: 80, left: 50 };
+            const width = containerWidth - margin.left - margin.right;
+            const height = 400 - margin.top - margin.bottom; // Fixed height
+
+            // Select the SVG element and set its dimensions
+            const svg = d3.select("#" + svgId)
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // --- Create Scales ---
+
+            // X scale (Band scale for tasks)
+            const x = d3.scaleBand()
+                .domain(data.map(d => d.task))
+                .range([0, width])
+                .padding(0.2);
+
+            // Y scale (Linear scale for hours)
+            const y = d3.scaleLinear()
+                .domain([0, yMax]) // Use the consistent yMax
+                .range([height, 0]);
+
+            // --- Create Axes ---
+
+            // X axis
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x))
+                .selectAll("text")
+                    .style("text-anchor", "end")
+                    .attr("dx", "-.8em")
+                    .attr("dy", ".15em")
+                    .attr("transform", "rotate(-45)");
+
+            // Y axis
+            svg.append("g")
+                .attr("class", "axis")
+                .call(d3.axisLeft(y));
+
+            // Y axis label
+            svg.append("text")
+                .attr("class", "axis-label")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("Hours Spent per Week");
+
+            // --- Draw Bars ---
+            svg.selectAll(".bar")
+                .data(data)
+                .enter()
+                .append("rect")
+                .attr("class", "bar")
+                .attr("x", d => x(d.task))
+                .attr("y", d => y(0)) // Start at 0 for animation
+                .attr("width", x.bandwidth())
+                .attr("height", 0) // Start at 0 for animation
+                .attr("fill", barColor)
+                .attr("rx", 4) // Rounded corners
+                .attr("ry", 4)
+                // Add transition
+                .transition()
+                .duration(750)
+                .delay((d, i) => i * 100)
+                .attr("y", d => y(d.hours))
+                .attr("height", d => height - y(d.hours));
+
+
+            // --- Add Bar Labels (Numbers on top) ---
+            svg.selectAll(".bar-label")
+                .data(data)
+                .enter()
+                .append("text")
+                .attr("class", "bar-label")
+                .attr("x", d => x(d.task) + x.bandwidth() / 2)
+                .attr("y", d => y(d.hours) - 5)
+                .attr("text-anchor", "middle")
+                .style("opacity", 0) // Start invisible for transition
+                .text(d => d.hours.toFixed(1)) // Show one decimal place
+                // Add transition
+                .transition()
+                .duration(750)
+                .delay((d, i) => i * 100 + 300) // Delay after bar animation
+                .style("opacity", 1);
+        }
+        
+        // Function to draw both charts
+        function drawCharts() {
+            createBarChart(
+                "manual-chart-container", 
+                "manual-chart", 
+                manualData, 
+                "Manual Marketing Efforts", 
+                "#EF4444" // Tailwind red-500
+            );
+            
+            createBarChart(
+                "ai-chart-container", 
+                "ai-chart", 
+                aiData, 
+                "AI-Assisted Marketing", 
+                "#3B82F6" // Tailwind blue-500
+            );
+        }
+
+        // Initial draw
+        drawCharts();
+
+        // Redraw charts on window resize
+        window.addEventListener('resize', drawCharts);
+
+    </script>
+</body>
+</html>
